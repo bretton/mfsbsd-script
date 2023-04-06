@@ -3,7 +3,7 @@
 # depenguinme.sh
 
 # please bump version on change
-VERSION="v0.0.10"
+VERSION="v0.0.11"
 
 # v0.0.1  2022-07-28  bretton depenguin.me
 #  this is a proof of concept with parts to be further developed
@@ -51,6 +51,9 @@ VERSION="v0.0.10"
 #
 # v0.0.10 2022-08-23 grembo depenguin.me
 #  Add IPv6 support, add dependency for kvm-ok, enable qemu monitor socket
+#
+# v0.0.11 2023-04-06 bretton depenguin.me
+#  re-do 4 disk solution
 
 # this script must be run as root
 if [ "$EUID" -ne 0 ]; then
@@ -232,17 +235,83 @@ fi
 # download mfsbsd image
 wget -qc -O "${MFSBSDFILE}" "${MFSBSDISO}" || exit_error "Could not download mfsbsd image"
 
+# Get a list of disks
+# this includes sda* and nvme*
+# lsblk -nd --exclude 7 --output NAME --ascii
+
 # check if sda & sdb
 echo "Searching sd[ab]"
 set +e
-checkdiskone=$(lsblk |grep sda |head -1)
-notcdrom=$(lsblk |grep sdb |grep cdrom)
-if [ -z "${notcdrom}" ]; then
-	checkdisktwo=$(lsblk |grep sdb |head -1)
+
+# get a list of sd* disks, use grep inverse search
+my_standard_disks=$(lsblk -nd --exclude 7 --output NAME --ascii | grep -v nvme)
+
+if [ -n "$my_standard_disks" ]; then
+    standard_disk_count=$(echo "$my_standard_disks" | wc -l)
+    if [ "$standard_disk_count" -eq 1 ]; then
+        checkdiskone=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sda)
+    elif [ "$standard_disk_count" -eq 2 ]; then
+        checkdiskone=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sda)
+        notcdrom=$(lsblk |grep sdb |grep cdrom)
+            if [ -z "${notcdrom}" ]; then
+                checkdisktwo=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sdb)
+            else
+                checkdisktwo=""
+            fi
+    elif [ "$standard_disk_count" -eq 3 ]; then
+        checkdiskone=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sda)
+        notcdrom=$(lsblk |grep sdb |grep cdrom)
+            if [ -z "${notcdrom}" ]; then
+                checkdisktwo=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sdb)
+                checkdiskthree=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sdc)
+                checkdiskfour=""
+            else
+                checkdisktwo=""
+                checkdiskthree=""
+                checkdiskfour=""
+            fi
+    elif [ "$standard_disk_count" -eq 4 ]; then
+        checkdiskone=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sda)
+        notcdrom=$(lsblk |grep sdb |grep cdrom)
+            if [ -z "${notcdrom}" ]; then
+                checkdisktwo=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sdb)
+                checkdiskthree=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sdc)
+                checkdiskfour=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sdd)
+            else
+                checkdisktwo=""
+                checkdiskthree=""
+                checkdiskfour=""
+            fi
+    fi
 else
-	checkdisktwo=""
+    echo "Empty set for sd* disks"
 fi
 set -e
+
+# check if sda & sdb
+#echo "Searching sd[ab]"
+#set +e
+#checkdiskone=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sda)
+#notcdrom=$(lsblk |grep sdb |grep cdrom)
+#if [ -z "${notcdrom}" ]; then
+#	checkdisktwo=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sdb)
+#    checkdiskthree=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sdc)
+#    checkdiskfour=$(lsblk -nd --exclude 7 --output NAME --ascii |grep sdd)
+#else
+#    checkdisktwo=""
+#    checkdiskthree=""
+#    checkdiskfour=""
+#fi
+
+# TODO: This is setup but not used in the next NVME step, can be done?
+# get a list of nvme* disks, use grep inverse search
+#my_nvme_disks=$(lsblk -nd --exclude 7 --output NAME --ascii | grep -v sd)
+#
+#if [ -n "$my_nvme_disks" ]; then
+#    nvme_disk_count=$(echo "$my_nvme_disks" | wc -l)
+#else
+#    echo "Empty set for nvme* disks"
+#fi
 
 # check for nvme, hetzner specific
 set +e
@@ -251,11 +320,11 @@ mycheck=$(which nvme)
 if [ -n "${mycheck}" ]; then
 	existsnvme=$(nvme list | grep -c "/dev/nvme")
 	if [ "$existsnvme" -ge 2 ]; then
-		checknvmeone=$(lsblk |grep nvme0n1 |head -1)
-		checknvmetwo=$(lsblk |grep nvme1n1 |head -1)
+		checknvmeone=$(lsblk -nd --exclude 7 --output NAME --ascii |grep nvme0n1)
+		checknvmetwo=$(lsblk -nd --exclude 7 --output NAME --ascii |grep nvme1n1)
 		USENVME=1
 	elif [ "$existsnvme" -eq 1 ]; then
-		checknvmeone=$(lsblk |grep nvme0n1 |head -1)
+		checknvmeone=$(lsblk -nd --exclude 7 --output NAME --ascii |grep nvme0n1)
 		USENVME=1
 	elif [ -z "$existsnvme" ]; then
 		USENVME=0
@@ -267,18 +336,45 @@ disks=()
 
 # start qemu-static with parameters
 if [ "$USENVME" -eq 0 ]; then
-	if [ -n "$checkdiskone" ] && [ -n "$checkdisktwo" ]; then
-		printf "\nNOTICE: using sda and sdb\n\n"
-		disks=(
-		  -drive "file=/dev/sda,format=raw" \
-		  -drive "file=/dev/sdb,format=raw" \
-		)
-	elif [ -n "$checkdiskone" ] && [ -z "$checkdisktwo" ]; then
-		printf "\nNOTICE: using sda only\n\n"
-		disks=(
-		  -drive "file=/dev/sda,format=raw" \
-		)
-	fi
+	#if [ -n "$checkdiskone" ] && [ -n "$checkdisktwo" ]; then
+	#	printf "\nNOTICE: using sda and sdb\n\n"
+	#	disks=(
+	#	  -drive "file=/dev/sda,format=raw" \
+	#	  -drive "file=/dev/sdb,format=raw" \
+	#	)
+	#elif [ -n "$checkdiskone" ] && [ -z "$checkdisktwo" ]; then
+	#	printf "\nNOTICE: using sda only\n\n"
+	#	disks=(
+	#	  -drive "file=/dev/sda,format=raw" \
+	#	)
+	#fi
+    if [ -n "$checkdiskone" ] && [ -n "$checkdisktwo" ] && [ -z "$checkdiskthree" ] && [ -z "$checkdiskfour" ]; then
+        printf "\nNOTICE: using sda and sdb\n\n"
+        disks=(
+          -drive "file=/dev/sda,format=raw" \
+          -drive "file=/dev/sdb,format=raw" \
+        )
+    elif [ -n "$checkdiskone" ] && [ -z "$checkdisktwo" ] && [ -n "$checkdiskthree" ] && [ -z "$checkdiskfour" ]; then
+        printf "\nNOTICE: using sda, sdb and sdc\n\n"
+        disks=(
+          -drive "file=/dev/sda,format=raw" \
+          -drive "file=/dev/sdb,format=raw" \
+          -drive "file=/dev/sdc,format=raw" \
+        )
+    elif [ -n "$checkdiskone" ] && [ -z "$checkdisktwo" ] && [ -n "$checkdiskthree" ] && [ -n "$checkdiskfour" ]; then
+        printf "\nNOTICE: using sda, sdb, sdc and sdd\n\n"
+        disks=(
+          -drive "file=/dev/sda,format=raw" \
+          -drive "file=/dev/sdb,format=raw" \
+          -drive "file=/dev/sdc,format=raw" \
+          -drive "file=/dev/sdd,format=raw" \
+        )
+    elif [ -n "$checkdiskone" ] && [ -z "$checkdisktwo" ] && [ -z "$checkdiskthree" ] && [ -z "$checkdiskfour" ]; then
+        printf "\nNOTICE: using sda only\n\n"
+        disks=(
+          -drive "file=/dev/sda,format=raw" \
+        )
+    fi
 elif [ "$USENVME" -eq 1 ]; then
 	if [ -n "$checknvmeone" ] && [ -n "$checknvmetwo" ]; then
 		printf "\nNOTICE: using nvme0 and nvme1\n\n"
