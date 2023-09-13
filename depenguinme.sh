@@ -3,7 +3,7 @@
 # depenguinme.sh
 
 # please bump version on change
-VERSION="v0.0.11"
+VERSION="v0.0.13"
 
 # v0.0.1  2022-07-28  bretton depenguin.me
 #  this is a proof of concept with parts to be further developed
@@ -54,6 +54,14 @@ VERSION="v0.0.11"
 #
 # v0.0.11 2023-04-06 bretton depenguin.me
 #  re-do 4 disk solution
+#
+# v0.0.12 2023-09-08 bretton depenguin.me
+#  Include package ovmf in DEPS
+#
+# v0.0.13 2023-xx-xx bretton depenguin.me
+#  Four disk version 
+#
+
 
 # this script must be run as root
 if [ "$EUID" -ne 0 ]; then
@@ -86,6 +94,7 @@ DEPS=(
   "mkisofs:mkisofs"
   "qemu-system-x86_64:qemu-system-x86"
   "kvm-ok:cpu-checker"
+  "ovmf:ovmf"
   )  # binary:package
 
 usage() {
