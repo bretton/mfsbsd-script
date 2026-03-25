@@ -149,4 +149,5 @@ You can pass in the `-m <url of own mfsbsd image>` using one of the following UR
 * https://depenguin.me/files/mfsbsd-14.1-RELEASE-amd64.iso
 * https://depenguin.me/files/mfsbsd-14.2-RELEASE-amd64.iso
 * https://depenguin.me/files/mfsbsd-14.3-RELEASE-amd64.iso
+* https://depenguin.me/files/mfsbsd-14.4-RELEASE-amd64.iso
 * https://depenguin.me/files/mfsbsd-15.0-RELEASE-amd64.iso
