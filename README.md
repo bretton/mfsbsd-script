@@ -1,9 +1,9 @@
 # depenguin.me mfsbsd-script
-depenguin.me installer script for mfsBSD image to install FreeBSD 15.0 (traditional install not pkgbase, with zfs-on-root) using qemu
+depenguin.me installer script for mfsBSD image to install FreeBSD 15.1 (traditional install not pkgbase, with zfs-on-root) using qemu
 
 https://depenguin.me
 
-## Install FreeBSD-15.0 traditional install on a dedicated server from a Linux rescue environment
+## Install FreeBSD-15.1 traditional install on a dedicated server from a Linux rescue environment
 
 ### 1. Boot into rescue console
 
@@ -11,7 +11,7 @@ You must be logged in as root. Prepare file path or URL of SSH public key.
 
 ### 2. Download and run installer script
 
-Boot your server into rescue mode, then download and run the custom [mfsBSD-based installer](https://github.com/depenguin-me/depenguin-builder) for FreeBSD-15.0, traditional install (non-pkgbase) with root-on-ZFS.
+Boot your server into rescue mode, then download and run the custom [mfsBSD-based installer](https://github.com/depenguin-me/depenguin-builder) for FreeBSD-15.1, traditional install (non-pkgbase) with root-on-ZFS.
 
     wget https://depenguin.me/run.sh && chmod +x run.sh && \
       ./run.sh [ -d ] [ -f ] [ -r ram ] [ -m <url of own mfsbsd image> ] authorized_keys ...
@@ -56,7 +56,7 @@ hint.uart.1.disabled="1"
 
 We recommend the unattended process for most setups.
 
-### 5a. Install FreeBSD-15.0 using unattended bsdinstall
+### 5a. Install FreeBSD-15.1 using unattended bsdinstall
 
 Copy the file `depenguin_settings.sh.sample` to `depenguin_settings.sh` and edit for your server's details.
 
@@ -151,3 +151,4 @@ You can pass in the `-m <url of own mfsbsd image>` using one of the following UR
 * https://depenguin.me/files/mfsbsd-14.3-RELEASE-amd64.iso
 * https://depenguin.me/files/mfsbsd-14.4-RELEASE-amd64.iso
 * https://depenguin.me/files/mfsbsd-15.0-RELEASE-amd64.iso
+* https://depenguin.me/files/mfsbsd-15.1-RELEASE-amd64.iso
