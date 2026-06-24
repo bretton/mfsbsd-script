@@ -3,8 +3,11 @@
 # depenguinme.sh
 
 # please bump version on change
-VERSION="v0.0.21"
+VERSION="v0.0.22"
 
+# v0.0.22 2026-06-24 bretton depenguin.me
+#  Default to 15.1 ISO, traditional install, not pkgbase
+#
 # v0.0.21 2025-12-13 bretton depenguin.me
 #  Default to 15.0 ISO, traditional install, not pkgbase
 #  Add option to disable KVM acceleration in run.sh parameters (EX44 servers)
@@ -115,7 +118,7 @@ REQUIRE_SSHKEY=YES
 DAEMONIZE=NO
 NOKVMACCEL=NO
 USE_IPV6=NO
-MFSBSDISO="https://depenguin.me/files/mfsbsd-15.0-RELEASE-amd64.iso"
+MFSBSDISO="https://depenguin.me/files/mfsbsd-15.1-RELEASE-amd64.iso"
 
 # display command usage
 usage() {
